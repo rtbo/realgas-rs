@@ -1,35 +1,12 @@
 pub mod eos;
+mod gas;
 pub mod molecules;
 
 use eos::{Eos, EquationOfState};
-use roots::Roots;
+pub use gas::{Gas, Mixture, Molecule};
 
 /// Universal gas constant in J/mol.K
 pub const R: f64 = 8.31446262;
-
-/// A gas molecule, represented by its physical properties.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Molecule {
-    /// The critical pressure in Pa
-    pub pc: f64,
-    /// The critical temperature in K
-    pub tc: f64,
-    /// The acentric factor
-    pub w: f64,
-}
-
-/// A mixture of several gases
-#[derive(Debug, Clone)]
-pub struct Mixture {
-    pub comps: Vec<(f64, Molecule)>,
-}
-
-/// A generic gas, that can be either a molecule or a mixture.
-#[derive(Debug, Clone)]
-pub enum Gas {
-    Molecule(Molecule),
-    Mixture(Mixture),
-}
 
 /// State trait of a gas.
 /// All values here are intensive.
@@ -59,6 +36,8 @@ pub trait State {
     /// This function will panic of no positive real root can be found, which is generally
     /// an indication that the parameters have physical non-sense.
     fn z<E: EquationOfState>(&self, p: f64, t: f64) -> f64 {
+        use roots::Roots;
+
         let a = self.a::<E>(t);
         let b = self.b::<E>();
         let [a3, a2, a1, a0] = E::z_polyn(a, b, p, t);
