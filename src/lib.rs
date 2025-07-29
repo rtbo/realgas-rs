@@ -104,30 +104,6 @@ pub trait ExtensiveState: State {
 /// State trait of a gas for equation of state known at runtime.
 /// All values here are intensive.
 pub trait StateEos: State {
-    /// The molecular attraction parameter
-    fn a_eos(&self, eos: Eos, t: f64) -> f64 {
-        match eos {
-            Eos::IdealGas => self.a::<eos::IdealGas>(t),
-            Eos::VanDerWaals => self.a::<eos::VanDerWaals>(t),
-            Eos::RedlichKwong => self.a::<eos::RedlichKwong>(t),
-            Eos::SoaveRedlichKwong => self.a::<eos::SoaveRedlichKwong>(t),
-            Eos::PengRobinson => self.a::<eos::PengRobinson>(t),
-            Eos::PatelTejaValderrama => self.a::<eos::PatelTejaValderrama>(t),
-        }
-    }
-
-    /// The molecular volume parameter
-    fn b_eos(&self, eos: Eos) -> f64 {
-        match eos {
-            Eos::IdealGas => self.b::<eos::IdealGas>(),
-            Eos::VanDerWaals => self.b::<eos::VanDerWaals>(),
-            Eos::RedlichKwong => self.b::<eos::RedlichKwong>(),
-            Eos::SoaveRedlichKwong => self.b::<eos::SoaveRedlichKwong>(),
-            Eos::PengRobinson => self.b::<eos::PengRobinson>(),
-            Eos::PatelTejaValderrama => self.b::<eos::PatelTejaValderrama>(),
-        }
-    }
-
     /// Compute the pressure of the gas for the molar volume and temperature.
     fn pressure_eos(&self, eos: Eos, vm: f64, t: f64) -> f64 {
         match eos {
