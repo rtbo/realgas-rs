@@ -11,6 +11,9 @@ pub const R: f64 = 8.31446262;
 /// State trait of a gas.
 /// All values here are intensive.
 pub trait State {
+    /// The molar mass of the gas, in kg/mol
+    fn molar_mass(&self) -> f64;
+
     /// The molecular attraction parameter
     fn a<E: EquationOfState>(&self, t: f64) -> f64;
 
@@ -52,6 +55,18 @@ pub trait State {
         z.filter(|&z| z > 0.0)
             .expect("Should have a found a positive real root")
     }
+
+    /// Compute the molar volume the gas in m^3/mol
+    fn molar_volume<E: EquationOfState>(&self, p: f64, t: f64) -> f64 {
+        let z = self.z::<E>(p, t);
+        z * R * t / p
+    }
+
+    /// Compute the specific mass of the gas in kg/m^3
+    fn specific_mass<E: EquationOfState>(&self, p: f64, t: f64) -> f64 {
+        let z = self.z::<E>(p, t);
+        self.molar_mass() * p / (z * R * t)
+    }
 }
 
 /// An helper trait to compute extensive state
@@ -65,13 +80,19 @@ pub trait ExtensiveState: State {
         p * v / z / R / t
     }
 
-    /// Compute the volume of the gas for the pressure, mols and temperature.
+    /// Compute the volume of the gas for given pressure, mols and temperature.
     ///
     /// # Panics
     /// This function can panic if the parameters have physical non-sense
     fn volume<E: EquationOfState>(&self, p: f64, n: f64, t: f64) -> f64 {
         let z = self.z::<E>(p, t);
         n * z * R * t / p
+    }
+
+    /// Compute the mass of the gas for given pressure, volume and temperature.
+    fn mass<E: EquationOfState>(&self, p: f64, v: f64, t: f64) -> f64 {
+        let n = self.mols::<E>(p, v, t);
+        self.molar_mass() * n
     }
 }
 
@@ -162,6 +183,10 @@ impl State for Molecule {
     fn b<E: EquationOfState>(&self) -> f64 {
         E::b(self.pc, self.tc)
     }
+
+    fn molar_mass(&self) -> f64 {
+        self.m
+    }
 }
 
 impl ExtensiveState for Molecule {}
@@ -186,6 +211,12 @@ impl State for Mixture {
             .iter()
             .fold(0.0, |s, (f, p)| s + f * E::b(p.pc, p.tc))
     }
+
+    fn molar_mass(&self) -> f64 {
+        self.comps
+            .iter()
+            .fold(0.0, |s, (f, p)| s + f * p.m)
+    }
 }
 
 impl ExtensiveState for Mixture {}
@@ -206,6 +237,13 @@ impl State for Gas {
             Gas::Mixture(mix) => mix.b::<E>(),
         }
     }
+
+    fn molar_mass(&self) -> f64 {
+        match self {
+            Gas::Molecule(props) => props.molar_mass(),
+            Gas::Mixture(mix) => mix.molar_mass(),
+        }
+    }
 }
 
 impl ExtensiveState for Gas {}
@@ -214,30 +252,31 @@ impl ExtensiveStateEos for Gas {}
 
 #[cfg(test)]
 mod tests {
-    use super::{ExtensiveState, State};
+    use super::{State};
     use crate::{eos, molecules};
     use float_eq::assert_float_eq;
 
     #[test]
     fn h2_mobility() {
-        type E = eos::PengRobinson;
-
+        // H2 in mobility storage is reputed at 39.75 kg/m3
         let h2 = molecules::H2;
+        let h2_storage_mass = 39.75; // kg/m3
+        // Peng-Robinson
+        type E = eos::PengRobinson;
 
         // H2 mobility storage conditions (70 MPa, 15°C)
         let p = 70.0 * 1e6 + 101325.0;
-        let t = 15.0 + 273.15;
-        let mols = h2.mols::<E>(p, 1.0, t);
-        // 42 kg/m3 <=> 21000 mol/m3
-        assert_float_eq!(mols, 21000f64, r2nd <= 0.01);
+        let t = 20.0 + 273.15;
+        let mass = h2.specific_mass::<E>(p, t);
+        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.01);
 
-        // H2 mobility storage conditions - fueling (87.5 MPa, 80°C)
+        // H2 mobility storage fueling conditions (87.5 MPa, 80°C)
         let p = 87.5 * 1e6 + 101325.0;
-        let t = 80.0 + 273.15;
+        let t = 85.0 + 273.15;
         let z = h2.z::<E>(p, t);
         assert_float_eq!(z, 1.42318, r2nd <= 0.01);
         // 42 kg/m3 <=> 21000 mol/m3
-        let mols = h2.mols::<E>(p, 1.0, t);
-        assert_float_eq!(mols, 21000f64, r2nd <= 0.01);
+        let mass = h2.specific_mass::<E>(p, t);
+        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.01);
     }
 }

@@ -10,6 +10,8 @@ pub struct Molecule {
     pub tc: f64,
     /// The acentric factor
     pub w: f64,
+    /// The molar mass in kg/mol
+    pub m: f64,
 }
 
 /// A mixture of several gases
@@ -100,10 +102,11 @@ impl Mixture {
         // and components will always be in the same order.
         // This makes mixtures trivially comparable
 
-        // sort with reverse order of factor, followed by increasing order of critical parameters
+        // sort with decreasing order of ratio, followed by decreasing order of molar mass
+        // followed by decreasing order of critical parameters
         comps.sort_by(|(fa, ma), (fb, mb)| {
-            (Reverse(*fa), ma.pc, ma.tc, ma.w)
-                .partial_cmp(&(Reverse(*fb), mb.pc, mb.tc, mb.w))
+            Reverse((*fa, ma.pc, ma.tc, ma.w))
+                .partial_cmp(&Reverse((*fb, mb.pc, mb.tc, mb.w)))
                 .unwrap()
         });
 
@@ -319,8 +322,8 @@ mod tests {
         let air_ar = 0.0093;
         let air_co2 = 0.0004;
         let air = Mixture::new(&[
-            Comp::Factor(air_n2, molecules::N2.into()),
             Comp::Factor(air_o2, molecules::O2.into()),
+            Comp::Factor(air_n2, molecules::N2.into()),
             Comp::Factor(air_ar, molecules::AR.into()),
             Comp::Factor(air_co2, molecules::CO2.into()),
         ])
@@ -351,6 +354,11 @@ mod tests {
         ])
         .unwrap();
 
+        assert_eq!(mix1.comps.len(), 4);
+        assert_eq!(mix1.comps[0].1, molecules::N2);
+        assert_eq!(mix1.comps[1].1, molecules::O2);
+        assert_eq!(mix1.comps[2].1, molecules::AR);
+        assert_eq!(mix1.comps[3].1, molecules::CO2);
         assert_mixture_eq(&mix1, &mix2, 0.00001);
         assert_mixture_eq(&mix2, &mix3, 0.00001);
         assert_mixture_eq(&mix3, &mix4, 0.00001);
