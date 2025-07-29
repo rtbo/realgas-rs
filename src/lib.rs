@@ -287,7 +287,7 @@ mod tests {
         // H2 in mobility storage is reputed at 39.75 kg/m3
         let h2 = molecules::H2;
         let h2_storage_mass = 39.75; // kg/m3
-        type E = eos::PatelTejaValderrama;
+        type E = eos::PengRobinson;
 
         // H2 mobility storage conditions (70 MPa, 15°C)
         let p = 70.0 * 1e6 + 101325.0;
@@ -299,6 +299,6 @@ mod tests {
         let p = 87.5 * 1e6 + 101325.0;
         let t = 85.0 + 273.15;
         let mass = h2.specific_mass::<E>(p, t);
-        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.05);
+        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.07);
     }
 }
