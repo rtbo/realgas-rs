@@ -161,6 +161,18 @@ pub trait StateEos: State {
             Eos::PatelTejaValderrama => self.z::<eos::PatelTejaValderrama>(p, t),
         }
     }
+
+    /// Compute the molar volume the gas in m^3/mol
+    fn molar_volume_eos(&self, eos: Eos, p: f64, t: f64) -> f64 {
+        let z = self.z_eos(eos, p, t);
+        z * R * t / p
+    }
+
+    /// Compute the specific mass of the gas in kg/m^3
+    fn specific_mass_eos(&self, eos: Eos, p: f64, t: f64) -> f64 {
+        let z = self.z_eos(eos, p, t);
+        self.molar_mass() * p / (z * R * t)
+    }
 }
 
 /// An helper trait to compute extensive state for equation of state known at runtime.
@@ -181,6 +193,15 @@ pub trait ExtensiveStateEos: StateEos {
     fn volume_eos(&self, eos: Eos, p: f64, n: f64, t: f64) -> f64 {
         let z = self.z_eos(eos, p, t);
         n * z * R * t / p
+    }
+
+    /// Compute the mass for given pressure, volume and temperature.
+    ///
+    /// # Panics
+    /// This function can panic if the parameters have physical non-sense
+    fn mass_eos(&self, eos: Eos, p: f64, v: f64, t: f64) -> f64 {
+        let n = self.mols_eos(eos, p, v, t);
+        self.molar_mass() * n
     }
 }
 
