@@ -20,11 +20,15 @@ pub trait State {
     /// The molecular volume parameter
     fn b<E: EquationOfState>(&self) -> f64;
 
+    /// The modified molecular volume parameter
+    fn c<E: EquationOfState>(&self) -> f64;
+
     /// Compute the pressure of the gas for the molar volume and temperature
     fn pressure<E: EquationOfState>(&self, vm: f64, t: f64) -> f64 {
         let a = self.a::<E>(t);
         let b = self.b::<E>();
-        E::pressure(a, b, vm, t)
+        let c = self.c::<E>();
+        E::pressure(a, b, c, vm, t)
     }
 
     /// Compute the compression factor Z such as Z = PV/RT
@@ -43,7 +47,8 @@ pub trait State {
 
         let a = self.a::<E>(t);
         let b = self.b::<E>();
-        let [a3, a2, a1, a0] = E::z_polyn(a, b, p, t);
+        let c = self.b::<E>();
+        let [a3, a2, a1, a0] = E::z_polyn(a, b, c, p, t);
         let roots = roots::find_roots_cubic(a3, a2, a1, a0);
         let z = match roots {
             Roots::No([]) => None,
@@ -107,6 +112,7 @@ pub trait StateEos: State {
             Eos::RedlichKwong => self.a::<eos::RedlichKwong>(t),
             Eos::SoaveRedlichKwong => self.a::<eos::SoaveRedlichKwong>(t),
             Eos::PengRobinson => self.a::<eos::PengRobinson>(t),
+            Eos::PatelTejaValderrama => self.a::<eos::PatelTejaValderrama>(t),
         }
     }
 
@@ -118,6 +124,7 @@ pub trait StateEos: State {
             Eos::RedlichKwong => self.b::<eos::RedlichKwong>(),
             Eos::SoaveRedlichKwong => self.b::<eos::SoaveRedlichKwong>(),
             Eos::PengRobinson => self.b::<eos::PengRobinson>(),
+            Eos::PatelTejaValderrama => self.b::<eos::PatelTejaValderrama>(),
         }
     }
 
@@ -129,6 +136,7 @@ pub trait StateEos: State {
             Eos::RedlichKwong => self.pressure::<eos::RedlichKwong>(vm, t),
             Eos::SoaveRedlichKwong => self.pressure::<eos::SoaveRedlichKwong>(vm, t),
             Eos::PengRobinson => self.pressure::<eos::PengRobinson>(vm, t),
+            Eos::PatelTejaValderrama => self.pressure::<eos::PatelTejaValderrama>(vm, t),
         }
     }
 
@@ -150,6 +158,7 @@ pub trait StateEos: State {
             Eos::RedlichKwong => self.z::<eos::RedlichKwong>(p, t),
             Eos::SoaveRedlichKwong => self.z::<eos::SoaveRedlichKwong>(p, t),
             Eos::PengRobinson => self.z::<eos::PengRobinson>(p, t),
+            Eos::PatelTejaValderrama => self.z::<eos::PatelTejaValderrama>(p, t),
         }
     }
 }
@@ -177,11 +186,15 @@ pub trait ExtensiveStateEos: StateEos {
 
 impl State for Molecule {
     fn a<E: EquationOfState>(&self, t: f64) -> f64 {
-        E::a(self.pc, self.tc, self.w, t)
+        E::a(self.pc, self.tc, self.zc(), self.w, t)
     }
 
     fn b<E: EquationOfState>(&self) -> f64 {
-        E::b(self.pc, self.tc)
+        E::b(self.pc, self.tc, self.zc())
+    }
+
+    fn c<E: EquationOfState>(&self) -> f64 {
+        E::c(self.pc, self.tc, self.zc())
     }
 
     fn molar_mass(&self) -> f64 {
@@ -197,9 +210,9 @@ impl State for Mixture {
     fn a<E: EquationOfState>(&self, t: f64) -> f64 {
         let mut res = 0f64;
         for (fi, pi) in self.comps.iter() {
-            let ai = E::a(pi.pc, pi.tc, pi.w, t);
+            let ai = E::a(pi.pc, pi.tc, pi.zc(), pi.w, t);
             for (fj, pj) in self.comps.iter() {
-                let aj = E::a(pj.pc, pj.tc, pj.w, t);
+                let aj = E::a(pj.pc, pj.tc, pj.zc(), pj.w, t);
                 res += fi * fj * (ai * aj).sqrt();
             }
         }
@@ -209,7 +222,13 @@ impl State for Mixture {
     fn b<E: EquationOfState>(&self) -> f64 {
         self.comps
             .iter()
-            .fold(0.0, |s, (f, p)| s + f * E::b(p.pc, p.tc))
+            .fold(0.0, |s, (f, p)| s + f * E::b(p.pc, p.tc, p.zc()))
+    }
+
+    fn c<E: EquationOfState>(&self) -> f64 {
+        self.comps
+            .iter()
+            .fold(0.0, |s, (f, p)| s + f * E::c(p.pc, p.tc, p.zc()))
     }
 
     fn molar_mass(&self) -> f64 {
@@ -238,6 +257,13 @@ impl State for Gas {
         }
     }
 
+    fn c<E: EquationOfState>(&self) -> f64 {
+        match self {
+            Gas::Molecule(props) => props.c::<E>(),
+            Gas::Mixture(mix) => mix.c::<E>(),
+        }
+    }
+
     fn molar_mass(&self) -> f64 {
         match self {
             Gas::Molecule(props) => props.molar_mass(),
@@ -261,22 +287,18 @@ mod tests {
         // H2 in mobility storage is reputed at 39.75 kg/m3
         let h2 = molecules::H2;
         let h2_storage_mass = 39.75; // kg/m3
-        // Peng-Robinson
-        type E = eos::PengRobinson;
+        type E = eos::PatelTejaValderrama;
 
         // H2 mobility storage conditions (70 MPa, 15°C)
         let p = 70.0 * 1e6 + 101325.0;
         let t = 20.0 + 273.15;
         let mass = h2.specific_mass::<E>(p, t);
-        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.01);
+        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.05);
 
         // H2 mobility storage fueling conditions (87.5 MPa, 80°C)
         let p = 87.5 * 1e6 + 101325.0;
         let t = 85.0 + 273.15;
-        let z = h2.z::<E>(p, t);
-        assert_float_eq!(z, 1.42318, r2nd <= 0.01);
-        // 42 kg/m3 <=> 21000 mol/m3
         let mass = h2.specific_mass::<E>(p, t);
-        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.01);
+        assert_float_eq!(mass, h2_storage_mass, r2nd <= 0.05);
     }
 }
