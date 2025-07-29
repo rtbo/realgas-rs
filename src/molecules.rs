@@ -320,3 +320,12 @@ pub const CH3OH: Molecule = Molecule {
     w: 0.556,
     m: 0.03204294,
 };
+
+/// Methyl Chloride
+pub const CH3CL: Molecule = Molecule {
+    tc: 416.3,
+    pc: 67.0 * 1e5,
+    vc: 138.9 * 1e-6,
+    w: 0.153,
+    m: 0.0504905,
+};
