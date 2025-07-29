@@ -8,6 +8,23 @@ pub use gas::{Gas, Mixture, Molecule};
 /// Universal gas constant in J/mol.K
 pub const R: f64 = 8.31446262;
 
+/// A type describing the critical state of a pure compound
+pub struct CriticalState {
+    /// The critical pressure of the compound, in Pa
+    pub p: f64,
+    /// The critical temperature of the compound, in K
+    pub t: f64,
+    /// The critical volume of the compound, in m3/mol
+    pub v: f64,
+}
+
+impl CriticalState {
+    /// The compressibility factor at the critical point
+    pub fn z(&self) -> f64 {
+        self.p * self.v / (R * self.t)
+    }
+}
+
 /// State trait of a gas.
 /// All values here are intensive.
 pub trait State {
@@ -183,15 +200,15 @@ pub trait ExtensiveStateEos: StateEos {
 
 impl State for Molecule {
     fn a<E: EquationOfState>(&self, t: f64) -> f64 {
-        E::a(self.pc, self.tc, self.zc(), self.w, t)
+        E::a(&self.critical_state(), self.w, t)
     }
 
     fn b<E: EquationOfState>(&self) -> f64 {
-        E::b(self.pc, self.tc, self.zc())
+        E::b(&self.critical_state())
     }
 
     fn c<E: EquationOfState>(&self) -> f64 {
-        E::c(self.pc, self.tc, self.zc())
+        E::c(&self.critical_state())
     }
 
     fn molar_mass(&self) -> f64 {
@@ -206,10 +223,10 @@ impl ExtensiveStateEos for Molecule {}
 impl State for Mixture {
     fn a<E: EquationOfState>(&self, t: f64) -> f64 {
         let mut res = 0f64;
-        for (fi, pi) in self.comps.iter() {
-            let ai = E::a(pi.pc, pi.tc, pi.zc(), pi.w, t);
-            for (fj, pj) in self.comps.iter() {
-                let aj = E::a(pj.pc, pj.tc, pj.zc(), pj.w, t);
+        for (fi, mi) in self.comps.iter() {
+            let ai = E::a(&mi.critical_state(), mi.w, t);
+            for (fj, mj) in self.comps.iter() {
+                let aj = E::a(&mj.critical_state(), mj.w, t);
                 res += fi * fj * (ai * aj).sqrt();
             }
         }
@@ -219,19 +236,19 @@ impl State for Mixture {
     fn b<E: EquationOfState>(&self) -> f64 {
         self.comps
             .iter()
-            .fold(0.0, |s, (f, p)| s + f * E::b(p.pc, p.tc, p.zc()))
+            .fold(0.0, |s, (f, m)| s + f * E::b(&m.critical_state()))
     }
 
     fn c<E: EquationOfState>(&self) -> f64 {
         self.comps
             .iter()
-            .fold(0.0, |s, (f, p)| s + f * E::c(p.pc, p.tc, p.zc()))
+            .fold(0.0, |s, (f, m)| s + f * E::c(&m.critical_state()))
     }
 
     fn molar_mass(&self) -> f64 {
         self.comps
             .iter()
-            .fold(0.0, |s, (f, p)| s + f * p.m)
+            .fold(0.0, |s, (f, m)| s + f * m.m)
     }
 }
 

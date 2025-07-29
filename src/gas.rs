@@ -1,4 +1,4 @@
-use crate::molecules;
+use crate::{molecules, CriticalState};
 use std::{borrow::Borrow, cmp::Reverse, str::FromStr};
 
 /// A gas molecule, represented by its physical properties.
@@ -17,8 +17,8 @@ pub struct Molecule {
 }
 
 impl Molecule {
-    pub fn zc(&self) -> f64 {
-        self.pc * self.vc / (crate::R * self.tc)
+    pub fn critical_state(&self) -> CriticalState {
+        CriticalState { p: self.pc, t: self.tc, v: self.vc }
     }
 }
 

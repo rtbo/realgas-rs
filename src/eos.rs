@@ -1,4 +1,4 @@
-use crate::R;
+use crate::{CriticalState, R};
 
 /// The default and recommended equation of state of this library.
 pub type DefaultEos = PengRobinson;
@@ -7,28 +7,22 @@ pub trait EquationOfState {
     /// Compute the molecular attraction parameter of the EoS, aka. the A parameter.
     ///
     /// # Arguments
-    ///  * `pc` - The critical pressure of the molecule, in Pa
-    ///  * `tc` - The critical temperature of the molecule, in K
-    ///  * `zc` - The critical compressibility factor (zc = pc * vc / (R * tc))
+    ///  * `cs` - The critical state of the molecule
     ///  * `w`  - The acentric factor of the molecule (no dimension)
     ///  * `t`  - The temperature of the gas, in K
-    fn a(pc: f64, tc: f64, zc: f64, w: f64, t: f64) -> f64;
+    fn a(cs: &CriticalState, w: f64, t: f64) -> f64;
 
     /// Compute the molecular volume parameter of the EoS, aka. the B parameter.
     ///
     /// # Arguments
-    ///  * `pc` - The critical pressure of the molecule, in Pa
-    ///  * `tc` - The critical temperature of the molecule, in K
-    ///  * `zc` - The critical compressibility factor (zc = pc * vc / (R * tc))
-    fn b(pc: f64, tc: f64, zc: f64) -> f64;
+    ///  * `cs` - The critical state of the molecule
+    fn b(cs: &CriticalState) -> f64;
 
     /// Modification of the molecular attraction parameter of the EoS, aka. the C parameter.
     ///
     /// # Arguments
-    ///  * `pc` - The critical pressure of the molecule, in Pa
-    ///  * `tc` - The critical temperature of the molecule, in K
-    ///  * `zc` - The critical compressibility factor (zc = pc * vc / (R * tc))
-    fn c(pc: f64, tc: f64, zc: f64) -> f64;
+    ///  * `cs` - The critical state of the molecule
+    fn c(cs: &CriticalState) -> f64;
 
     /// Compute the gas pressure for given parameters and state.
     ///
@@ -55,15 +49,15 @@ pub trait EquationOfState {
 pub enum IdealGas {}
 
 impl EquationOfState for IdealGas {
-    fn a(_pc: f64, _tc: f64, _zc: f64, _w: f64, _t: f64) -> f64 {
+    fn a(_cs: &CriticalState, _w: f64, _t: f64) -> f64 {
         0.0
     }
 
-    fn b(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn b(_cs: &CriticalState) -> f64 {
         0.0
     }
 
-    fn c(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn c(_cs: &CriticalState) -> f64 {
         0.0
     }
 
@@ -80,15 +74,15 @@ impl EquationOfState for IdealGas {
 pub enum VanDerWaals {}
 
 impl EquationOfState for VanDerWaals {
-    fn a(pc: f64, tc: f64, _zc: f64, _w: f64, _t: f64) -> f64 {
-        return 27.0 * R * R * tc * tc / (64.0 * pc);
+    fn a(cs: &CriticalState, _w: f64, _t: f64) -> f64 {
+        return 27.0 * R * R * cs.t * cs.t / (64.0 * cs.p);
     }
 
-    fn b(pc: f64, tc: f64, _zc: f64) -> f64 {
-        return R * tc / (8.0 * pc);
+    fn b(cs: &CriticalState) -> f64 {
+        return R * cs.t / (8.0 * cs.p);
     }
 
-    fn c(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn c(_cs: &CriticalState) -> f64 {
         0.0
     }
 
@@ -113,15 +107,15 @@ impl EquationOfState for VanDerWaals {
 pub enum RedlichKwong {}
 
 impl EquationOfState for RedlichKwong {
-    fn a(pc: f64, tc: f64, _zc: f64, _w: f64, _t: f64) -> f64 {
-        0.42748023 * R * R * tc.powf(2.5) / pc
+    fn a(cs: &CriticalState, _w: f64, _t: f64) -> f64 {
+        0.42748023 * R * R * cs.t.powf(2.5) / cs.p
     }
 
-    fn b(pc: f64, tc: f64, _zc: f64) -> f64 {
-        0.08664035 * R * tc / pc
+    fn b(cs: &CriticalState) -> f64 {
+        0.08664035 * R * cs.t / cs.p
     }
 
-    fn c(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn c(_cs: &CriticalState) -> f64 {
         0.0
     }
 
@@ -146,19 +140,19 @@ impl EquationOfState for RedlichKwong {
 pub enum SoaveRedlichKwong {}
 
 impl EquationOfState for SoaveRedlichKwong {
-    fn a(pc: f64, tc: f64, _zc: f64, w: f64, t: f64) -> f64 {
+    fn a(cs: &CriticalState, w: f64, t: f64) -> f64 {
         let m = 0.48 + 1.574 * w - 0.176 * w * w;
-        let sq_a = 1f64 + m * (1f64 - (t / tc).sqrt());
+        let sq_a = 1f64 + m * (1f64 - (t / cs.t).sqrt());
         let alpha = sq_a * sq_a;
 
-        alpha * 0.42748023 * R * R * tc * tc / pc
+        alpha * 0.42748023 * R * R * cs.t * cs.t / cs.p
     }
 
-    fn b(pc: f64, tc: f64, _zc: f64) -> f64 {
-        return 0.08664035 * R * tc / pc;
+    fn b(cs: &CriticalState) -> f64 {
+        return 0.08664035 * R * cs.t / cs.p;
     }
 
-    fn c(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn c(_cs: &CriticalState) -> f64 {
         0.0
     }
 
@@ -183,23 +177,23 @@ impl EquationOfState for SoaveRedlichKwong {
 pub enum PengRobinson {}
 
 impl EquationOfState for PengRobinson {
-    fn a(pc: f64, tc: f64, _zc: f64, w: f64, t: f64) -> f64 {
+    fn a(cs: &CriticalState, w: f64, t: f64) -> f64 {
         let m = if w <= 0.491 {
             0.37464 + 1.56226 * w - 0.26992 * w * w
         } else {
             0.379642 + 1.487503 * w - 0.164423 * w * w - 0.016666 * w * w * w
         };
-        let sq_a = 1f64 + m * (1f64 - (t / tc).sqrt());
+        let sq_a = 1f64 + m * (1f64 - (t / cs.t).sqrt());
         let alpha = sq_a * sq_a;
         
-        alpha * 0.4572355289213821 * R * R * tc * tc / pc
+        alpha * 0.4572355289213821 * R * R * cs.t * cs.t / cs.p
     }
 
-    fn b(pc: f64, tc: f64, _zc: f64) -> f64 {
-        0.07779607390388844 * R * tc / pc
+    fn b(cs: &CriticalState) -> f64 {
+        0.07779607390388844 * R * cs.t / cs.p
     }
 
-    fn c(_pc: f64, _tc: f64, _zc: f64) -> f64 {
+    fn c(_cs: &CriticalState) -> f64 {
         0.0
     }
 
@@ -223,22 +217,22 @@ impl EquationOfState for PengRobinson {
 pub enum PatelTejaValderrama {} 
 
 impl EquationOfState for PatelTejaValderrama {
-    fn a(pc: f64, tc: f64, zc: f64, w: f64, t: f64) -> f64 {
-        let m = 0.46283 + 3.58230 * w * zc + 8.19417 * w * w * zc * zc;
-        let sq_a = 1f64 + m * (1f64 - (t / tc).sqrt());
+    fn a(cs: &CriticalState, w: f64, t: f64) -> f64 {
+        let m = 0.46283 + 3.58230 * w * cs.z() + 8.19417 * w * w * cs.z() * cs.z();
+        let sq_a = 1f64 + m * (1f64 - (t / cs.t).sqrt());
         let alpha = sq_a * sq_a;
-        let omega_a = 0.66121 - 0.76105 * zc;
-        omega_a * alpha * R * R * tc * tc / pc
+        let omega_a = 0.66121 - 0.76105 * cs.z();
+        omega_a * alpha * R * R * cs.t * cs.t / cs.p
     }
 
-    fn b(pc: f64, tc: f64, zc: f64) -> f64 {
-        let omega_b = 0.02207 + 0.20868 * zc;
-        omega_b * R * tc / pc
+    fn b(cs: &CriticalState) -> f64 {
+        let omega_b = 0.02207 + 0.20868 * cs.z();
+        omega_b * R * cs.t / cs.p
     }
 
-    fn c(pc: f64, tc: f64, zc: f64) -> f64 {
-        let omega_c = 0.57765 - 1.78080 * zc;
-        omega_c * R * tc / pc
+    fn c(cs: &CriticalState) -> f64 {
+        let omega_c = 0.57765 - 1.78080 * cs.z();
+        omega_c * R * cs.t / cs.p
     }
 
     fn pressure(a: f64, b: f64, c: f64, vm: f64, t: f64) -> f64 {
