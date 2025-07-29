@@ -31,21 +31,13 @@ pub trait State {
     /// The molar mass of the gas, in kg/mol
     fn molar_mass(&self) -> f64;
 
-    /// The molecular attraction parameter
-    fn a<E: EquationOfState>(&self, t: f64) -> f64;
-
-    /// The molecular volume parameter
-    fn b<E: EquationOfState>(&self) -> f64;
-
-    /// The modified molecular volume parameter
-    fn c<E: EquationOfState>(&self) -> f64;
+    /// Get the parameters for the given equation of state.
+    fn eos_params<E: EquationOfState>(&self, t: f64) -> E::Params;
 
     /// Compute the pressure of the gas for the molar volume and temperature
     fn pressure<E: EquationOfState>(&self, vm: f64, t: f64) -> f64 {
-        let a = self.a::<E>(t);
-        let b = self.b::<E>();
-        let c = self.c::<E>();
-        E::pressure(a, b, c, vm, t)
+        let params = self.eos_params::<E>(t);
+        E::pressure(&params, vm, t)
     }
 
     /// Compute the compression factor Z such as Z = PV/RT
@@ -62,10 +54,8 @@ pub trait State {
     fn z<E: EquationOfState>(&self, p: f64, t: f64) -> f64 {
         use roots::Roots;
 
-        let a = self.a::<E>(t);
-        let b = self.b::<E>();
-        let c = self.b::<E>();
-        let [a3, a2, a1, a0] = E::z_polyn(a, b, c, p, t);
+        let params = self.eos_params::<E>(t);
+        let [a3, a2, a1, a0] = E::z_polyn(&params, p, t);
         let roots = roots::find_roots_cubic(a3, a2, a1, a0);
         let z = match roots {
             Roots::No([]) => None,
@@ -199,16 +189,8 @@ pub trait ExtensiveStateEos: StateEos {
 }
 
 impl State for Molecule {
-    fn a<E: EquationOfState>(&self, t: f64) -> f64 {
-        E::a(&self.critical_state(), self.w, t)
-    }
-
-    fn b<E: EquationOfState>(&self) -> f64 {
-        E::b(&self.critical_state())
-    }
-
-    fn c<E: EquationOfState>(&self) -> f64 {
-        E::c(&self.critical_state())
+    fn eos_params<E: EquationOfState>(&self, t: f64) -> E::Params {
+        E::params(&self.critical_state(), self.w, t)
     }
 
     fn molar_mass(&self) -> f64 {
@@ -221,28 +203,14 @@ impl StateEos for Molecule {}
 impl ExtensiveStateEos for Molecule {}
 
 impl State for Mixture {
-    fn a<E: EquationOfState>(&self, t: f64) -> f64 {
-        let mut res = 0f64;
-        for (fi, mi) in self.comps.iter() {
-            let ai = E::a(&mi.critical_state(), mi.w, t);
-            for (fj, mj) in self.comps.iter() {
-                let aj = E::a(&mj.critical_state(), mj.w, t);
-                res += fi * fj * (ai * aj).sqrt();
-            }
-        }
-        res
-    }
+    fn eos_params<E: EquationOfState>(&self, t: f64) -> E::Params {
+        use eos::MixingRules;
 
-    fn b<E: EquationOfState>(&self) -> f64 {
-        self.comps
+        let params = self.comps
             .iter()
-            .fold(0.0, |s, (f, m)| s + f * E::b(&m.critical_state()))
-    }
+            .map(|(f, m)| (*f, E::params(&m.critical_state(), m.w, t)));
 
-    fn c<E: EquationOfState>(&self) -> f64 {
-        self.comps
-            .iter()
-            .fold(0.0, |s, (f, m)| s + f * E::c(&m.critical_state()))
+        E::Params::mix(params)
     }
 
     fn molar_mass(&self) -> f64 {
@@ -257,24 +225,10 @@ impl StateEos for Mixture {}
 impl ExtensiveStateEos for Mixture {}
 
 impl State for Gas {
-    fn a<E: EquationOfState>(&self, t: f64) -> f64 {
+    fn eos_params<E: EquationOfState>(&self, t: f64) -> E::Params {
         match self {
-            Gas::Molecule(props) => props.a::<E>(t),
-            Gas::Mixture(mix) => mix.a::<E>(t),
-        }
-    }
-
-    fn b<E: EquationOfState>(&self) -> f64 {
-        match self {
-            Gas::Molecule(props) => props.b::<E>(),
-            Gas::Mixture(mix) => mix.b::<E>(),
-        }
-    }
-
-    fn c<E: EquationOfState>(&self) -> f64 {
-        match self {
-            Gas::Molecule(props) => props.c::<E>(),
-            Gas::Mixture(mix) => mix.c::<E>(),
+            Gas::Molecule(m) => m.eos_params::<E>(t),
+            Gas::Mixture(m) => m.eos_params::<E>(t),
         }
     }
 
