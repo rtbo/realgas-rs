@@ -8,10 +8,18 @@ pub struct Molecule {
     pub pc: f64,
     /// The critical temperature in K
     pub tc: f64,
+    /// The critical volume in m^3/mol
+    pub vc: f64,
     /// The acentric factor
     pub w: f64,
     /// The molar mass in kg/mol
     pub m: f64,
+}
+
+impl Molecule {
+    pub fn zc(&self) -> f64 {
+        self.pc * self.vc / (crate::R * self.tc)
+    }
 }
 
 /// A mixture of several gases
