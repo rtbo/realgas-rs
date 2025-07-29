@@ -1,5 +1,8 @@
 use crate::R;
 
+/// The default and recommended equation of state of this library.
+pub type DefaultEos = PengRobinson;
+
 pub trait EquationOfState {
     /// Compute the molecular attraction parameter of the EoS, aka. the A parameter.
     ///
@@ -17,10 +20,22 @@ pub trait EquationOfState {
     ///  * `tc` - The critical temperature of the molecule, in K
     fn b(pc: f64, tc: f64) -> f64;
 
-    /// Compute the gas pressure for given parameters.
+    /// Compute the gas pressure for given parameters and state.
+    ///
+    /// # Arguments
+    ///  * `a`  - The molecular attraction parameter
+    ///  * `b`  - The molecular volume parameter
+    ///  * `vm` - The molar volume of the gas, in m^3/mol
+    ///  * `t`  - The temperature of the gas, in K
     fn pressure(a: f64, b: f64, vm: f64, t: f64) -> f64;
 
     /// The Z polyn [a3, a2, a1, a0] such as `a3*Z^3 + a2*Z^2 + a1*Z + a0 = 0`
+    ///
+    /// # Arguments
+    ///  * `a` - The molecular attraction parameter
+    ///  * `b` - The molecular volume parameter
+    ///  * `p` - The pressure of the gas, in Pa
+    ///  * `t` - The temperature of the gas, in K
     fn z_polyn(a: f64, b: f64, p: f64, t: f64) -> [f64; 4];
 }
 
@@ -184,4 +199,10 @@ pub enum Eos {
     SoaveRedlichKwong,
     /// The Peng-Robinson equation of state
     PengRobinson,
+}
+
+impl Default for Eos {
+    fn default() -> Self {
+        Eos::PengRobinson
+    }
 }
