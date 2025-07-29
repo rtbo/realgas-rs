@@ -37,285 +37,286 @@ where S: AsRef<str>
         "C3H6O" => Some(C3H6O),
         "C2H5OH" => Some(C2H5OH),
         "CH3OH" => Some(CH3OH),
+        "CH3CL" => Some(CH3CL),
         _ => None,
     }
 }
 
 /// Argon
 pub const AR: Molecule = Molecule {
-    tc: 150.8f64,
-    pc: 4_870_000f64,
+    tc: 150.8,
+    pc: 48.7 * 1e5,
     vc: 74.9 * 1e-6,
-    w: 0.001f64,
+    w: 0.001,
     m: 0.039948,
 };
 
 /// Bromine
 pub const BR2: Molecule = Molecule {
-    tc: 588f64,
-    pc: 10_340_000f64,
+    tc: 588.0,
+    pc: 103.4 * 1e5,
     vc: 127.2 * 1e-6,
-    w: 0.108f64,
+    w: 0.108,
     m: 0.159808,
 };
 
 /// Chlore
 pub const CL2: Molecule = Molecule {
-    tc: 416.9f64,
-    pc: 7_980_000f64,
+    tc: 416.9,
+    pc: 79.8 * 1e5,
     vc: 123.8 * 1e-6,
-    w: 0.09f64,
+    w: 0.09,
     m: 0.070906,
 };
 
 /// Fluor
 pub const F2: Molecule = Molecule {
-    tc: 144.3f64,
-    pc: 5_220_000f64,
+    tc: 144.3,
+    pc: 52.2 * 1e5,
     vc: 66.3 * 1e-6,
-    w: 0.054f64,
+    w: 0.054,
     m: 0.0379968,
 };
 
 /// Helium
 pub const HE: Molecule = Molecule {
-    tc: 5.19f64,
-    pc: 227_000f64,
+    tc: 5.19,
+    pc: 2.27 * 1e5,
     vc: 57.4 * 1e-6,
-    w: -0.365f64,
+    w: -0.365,
     m: 0.004002602,
 };
 
 /// Hydrogen
 pub const H2: Molecule = Molecule {
-    tc: 33f64,
-    pc: 1_290_000f64,
+    tc: 33.0,
+    pc: 12.9 * 1e5,
     vc: 64.3 * 1e-6,
-    w: -0.216f64,
+    w: -0.216,
     m: 0.00201588,
 };
 
 /// Iode
 pub const I2: Molecule = Molecule {
-    tc: 819f64,
-    pc: 11_650_000f64,
+    tc: 819.0,
+    pc: 116.5 * 1e5,
     vc: 155.0 * 1e-6,
-    w: 0.229f64,
+    w: 0.229,
     m: 0.25380894,
 };
 
 /// Krypton
 pub const KR: Molecule = Molecule {
-    tc: 209.4f64,
-    pc: 5_500_000f64,
+    tc: 209.4,
+    pc: 55.0 * 1e5,
     vc: 91.2 * 1e-6,
-    w: 0.005f64,
+    w: 0.005,
     m: 0.083798,
 };
 
 /// Neon
 pub const NE: Molecule = Molecule {
-    tc: 44.4f64,
-    pc: 2_760_000f64,
+    tc: 44.4,
+    pc: 27.6 * 1e5,
     vc: 41.6 * 1e-6,
-    w: -0.029f64,
+    w: -0.029,
     m: 0.0201797,
 };
 
 /// Nitrogen
 pub const N2: Molecule = Molecule {
-    tc: 126.2f64,
-    pc: 3_390_000f64,
+    tc: 126.2,
+    pc: 33.9 * 1e5,
     vc: 89.8 * 1e-6,
-    w: 0.039f64,
+    w: 0.039,
     m: 0.0280134,
 };
 
 /// Oxygen
 pub const O2: Molecule = Molecule {
-    tc: 154.6f64,
-    pc: 5_040_000f64,
+    tc: 154.6,
+    pc: 50.4 * 1e5,
     vc: 73.4 * 1e-6,
-    w: 0.025f64,
+    w: 0.025,
     m: 0.0319988,
 };
 
 /// Xenon
 pub const XE: Molecule = Molecule {
-    tc: 289.7f64,
-    pc: 5_840_000f64,
+    tc: 289.7,
+    pc: 58.4 * 1e5,
     vc: 66.3 * 1e-6,
-    w: 0.008f64,
+    w: 0.008,
     m: 0.131293,
 };
 
 /// Acetylene
 pub const C2H2: Molecule = Molecule {
-    tc: 308.3f64,
-    pc: 6_140_000f64,
+    tc: 308.3,
+    pc: 61.4 * 1e5,
     vc: 112.7 * 1e-6,
-    w: 0.19f64,
+    w: 0.19,
     m: 0.0260373,
 };
 
 /// Benzene
 pub const C6H6: Molecule = Molecule {
-    tc: 562.1f64,
-    pc: 4_890_000f64,
+    tc: 562.1,
+    pc: 48.9 * 1e5,
     vc: 259.0 * 1e-6,
-    w: 0.212f64,
+    w: 0.212,
     m: 0.0781118,
 };
 
 /// Butane
 pub const C4H10: Molecule = Molecule {
-    tc: 425.2f64,
-    pc: 3_800_000f64,
+    tc: 425.2,
+    pc: 38.0 * 1e5,
     vc: 255.0 * 1e-6,
-    w: 0.199f64,
+    w: 0.199,
     m: 0.0581222,
 };
 
 /// Cyclobutane
 pub const C4H8: Molecule = Molecule {
-    tc: 460f64,
-    pc: 4_990_000f64,
+    tc: 460.0,
+    pc: 49.9 * 1e5,
     vc: 210.0 * 1e-6,
-    w: 0.181f64,
+    w: 0.181,
     m: 0.0561063,
 };
 
 /// Cyclohexane
 pub const C6H12: Molecule = Molecule {
-    tc: 553.8f64,
-    pc: 4_070_000f64,
+    tc: 553.8,
+    pc: 40.7 * 1e5,
     vc: 308. * 1e-6,
-    w: 0.212f64,
+    w: 0.212,
     m: 0.0841595,
 };
 
 /// Cyclopropane
 pub const C3H6: Molecule = Molecule {
-    tc: 397.8f64,
-    pc: 5_490_000f64,
+    tc: 397.8,
+    pc: 54.9 * 1e5,
     vc: 163.0 * 1e-6,
-    w: 0.130f64,
+    w: 0.130,
     m: 0.0420797,
 };
 
 /// Ethane
 pub const C2H6: Molecule = Molecule {
-    tc: 305.4f64,
-    pc: 4_880_000f64,
+    tc: 305.4,
+    pc: 48.8 * 1e5,
     vc: 148.3 * 1e-6,
-    w: 0.099f64,
+    w: 0.099,
     m: 0.030069,
 };
 
 /// Ethylene
 pub const C2H4: Molecule = Molecule {
-    tc: 282.4f64,
-    pc: 5_040_000f64,
+    tc: 282.4,
+    pc: 50.4 * 1e5,
     vc: 130.4 * 1e-6,
-    w: 0.089f64,
+    w: 0.089,
     m: 0.0280532,
 };
 
 /// Ammonia
 pub const NH3: Molecule = Molecule {
-    tc: 405.5f64,
-    pc: 11_350_000f64,
+    tc: 405.5,
+    pc: 113.5 * 1e5,
     vc: 72.5 * 1e-6,
-    w: 0.250f64,
+    w: 0.250,
     m: 0.01703052,
 };
 
 /// Carbon dioxide
 pub const CO2: Molecule = Molecule {
-    tc: 304.1f64,
-    pc: 7_380_000f64,
+    tc: 304.1,
+    pc: 73.8 * 1e5,
     vc: 93.9 * 1e-6,
-    w: 0.239f64,
+    w: 0.239,
     m: 0.0440095,
 };
 
 /// Carbon monoxide
 pub const CO: Molecule = Molecule {
-    tc: 132.9f64,
-    pc: 3_500_000f64,
+    tc: 132.9,
+    pc: 35.0 * 1e5,
     vc: 93.2 * 1e-6,
-    w: 0.066f64,
+    w: 0.066,
     m: 0.0280101,
 };
 
 /// Nitric oxide
 pub const NO: Molecule = Molecule {
-    tc: 180f64,
-    pc: 6_480_000f64,
+    tc: 180.0,
+    pc: 64.8 * 1e5,
     vc: 57.7 * 1e-6,
-    w: 0.588f64,
+    w: 0.588,
     m: 0.0300061,
 };
 
 /// Sulfur dioxide
 pub const SO2: Molecule = Molecule {
-    tc: 430.8f64,
-    pc: 7_880_000f64,
+    tc: 430.8,
+    pc: 78.8 * 1e5,
     vc: 122.2 * 1e-6,
-    w: 0.256f64,
+    w: 0.256,
     m: 0.064066,
 };
 
 /// Sulfur trioxide
 pub const SO3: Molecule = Molecule {
-    tc: 491f64,
-    pc: 8_210_000f64,
+    tc: 491.0,
+    pc: 82.1 * 1e5,
     vc: 127.3 * 1e-6,
-    w: 0.481f64,
+    w: 0.481,
     m: 0.080066,
 };
 
 /// Water
 pub const H2O: Molecule = Molecule {
-    tc: 647.3f64,
-    pc: 22_120_000f64,
+    tc: 647.3,
+    pc: 221.2 * 1e5,
     vc: 57.1 * 1e-6,
-    w: 0.344f64,
+    w: 0.344,
     m: 0.01801528,
 };
 
 /// Acetic acid
 pub const CH3COOH: Molecule = Molecule {
-    tc: 592.7f64,
-    pc: 5_790_000f64,
+    tc: 592.7,
+    pc: 57.9 * 1e5,
     vc: 66.3 * 1e-6,
-    w: 0.09f64,
+    w: 0.09,
     m: 0.060052,
 };
 
 /// Acetone
 pub const C3H6O: Molecule = Molecule {
-    tc: 508.1f64,
-    pc: 4_700_000f64,
+    tc: 508.1,
+    pc: 47.0 * 1e5,
     vc: 209.0 * 1e-6,
-    w: 0.304f64,
+    w: 0.304,
     m: 0.0580791,
 };
 
 /// Ethanol
 pub const C2H5OH: Molecule = Molecule {
-    tc: 513.9f64,
-    pc: 6_140_000f64,
+    tc: 513.9,
+    pc: 61.4 * 1e5,
     vc: 167.1 * 1e-6,
-    w: 0.644f64,
+    w: 0.644,
     m: 0.04606844,
 };
 
 /// Methanol
 pub const CH3OH: Molecule = Molecule {
-    tc: 512.6f64,
-    pc: 8_090_000f64,
+    tc: 512.6,
+    pc: 80.9 * 1e5,
     vc: 118.0 * 1e-6,
-    w: 0.556f64,
+    w: 0.556,
     m: 0.03204294,
 };
