@@ -2,26 +2,26 @@ use plotters::{element::DashedPathElement, style::{Color, ShapeStyle, BLUE, CYAN
 use realgas::{eos::{self, EquationOfState}, Gas, State};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ZRow {
+pub struct Row {
     pub t: f64,
     pub z: Vec<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ZData {
+pub struct Data {
     pub pcols: Vec<f64>,
-    pub zrows: Vec<ZRow>,
+    pub zrows: Vec<Row>,
 }
 
-impl ZData {
+impl Data {
     pub fn new() -> Self {
-        ZData {
+        Data {
             pcols: Vec::new(),
             zrows: Vec::new(),
         }
     }
 
-    pub fn row(&self, t: f64) -> Option<&ZRow> {
+    pub fn row(&self, t: f64) -> Option<&Row> {
         self.zrows.iter().find(|row| (row.t - t).abs() < f64::EPSILON)
     }
 
@@ -33,14 +33,14 @@ impl ZData {
         self.zrows.iter().map(|row| row.t).collect()
     }
 
-    pub fn gen_eos<E: EquationOfState>(gas: &Gas, pressures: &[f64], temperatures: &[f64]) -> ZData {
-        let mut data = ZData {
+    pub fn gen_eos<E: EquationOfState>(gas: &Gas, pressures: &[f64], temperatures: &[f64]) -> Data {
+        let mut data = Data {
             pcols: pressures.to_vec(),
             zrows: Vec::new(),
         };
 
         for &t in temperatures {
-            let mut z_row = ZRow { t, z: Vec::new() };
+            let mut z_row = Row { t, z: Vec::new() };
             for &p in pressures {
                 let z = gas.z::<E>(p, t);
                 z_row.z.push(z);
@@ -56,7 +56,7 @@ impl ZData {
             .has_headers(true)
             .from_reader(csv_data.as_bytes());
 
-        let mut data = ZData::new();
+        let mut data = Data::new();
 
         let head = rdr.headers().expect("Failed to read headers");
         for header in head.iter().skip(1) {
@@ -77,7 +77,7 @@ impl ZData {
                         };
                         z.push(value);
                     }
-                    data.zrows.push(ZRow { t, z });
+                    data.zrows.push(Row { t, z });
                 }
                 Err(e) => eprintln!("Error reading record: {}", e),
             }
@@ -110,22 +110,22 @@ impl ZData {
 
 struct Series<'a> {
     name: &'a str,
-    data: &'a ZData,
+    data: &'a Data,
     style: ShapeStyle,
     dashed: bool,
 }
 
 pub fn do_gas(exp_csv: &str, gas_name: &str, gas: &Gas, plot_temps: &[f64]) {
     
-    let exp = ZData::from_csv(exp_csv);
+    let exp = Data::from_csv(exp_csv);
     let pressures = exp.pressures();
     let temperatures = exp.temperatures();
 
-    let vdw = ZData::gen_eos::<eos::VanDerWaals>(gas, pressures, &temperatures);
-    let rk = ZData::gen_eos::<eos::RedlichKwong>(gas, pressures, &temperatures);
-    let srk = ZData::gen_eos::<eos::SoaveRedlichKwong>(gas, pressures, &temperatures);
-    let pr = ZData::gen_eos::<eos::PengRobinson>(gas, pressures, &temperatures);
-    let ptv = ZData::gen_eos::<eos::PatelTejaValderrama>(gas, pressures, &temperatures);
+    let vdw = Data::gen_eos::<eos::VanDerWaals>(gas, pressures, &temperatures);
+    let rk = Data::gen_eos::<eos::RedlichKwong>(gas, pressures, &temperatures);
+    let srk = Data::gen_eos::<eos::SoaveRedlichKwong>(gas, pressures, &temperatures);
+    let pr = Data::gen_eos::<eos::PengRobinson>(gas, pressures, &temperatures);
+    let ptv = Data::gen_eos::<eos::PatelTejaValderrama>(gas, pressures, &temperatures);
 
     let series = &[
         Series {
