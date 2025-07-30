@@ -3,8 +3,22 @@ name = "realgas"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "realgas"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rg-bench"
+path = "bench/main.rs"
+required-features = ["bench"]
+
+[features]
+bench = ["csv", "plotters"]
+
 [dependencies]
 roots = "0.0.8"
+csv = { version="1.3.1", optional=true }
+plotters = { version="0.3.7", optional=true }
 
 [dev-dependencies]
 float_eq = "1.0.1"
