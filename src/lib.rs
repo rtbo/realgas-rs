@@ -8,20 +8,59 @@ pub use gas::{Gas, Mixture, Molecule};
 /// Universal gas constant in J/mol.K
 pub const R: f64 = 8.31446262;
 
-/// A type describing the critical state of a pure compound
-pub struct CriticalState {
-    /// The critical pressure of the compound, in Pa
+/// Pressure, Volume, Temperature state
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Pvt {
+    /// Pressure in Pa
     pub p: f64,
-    /// The critical temperature of the compound, in K
-    pub t: f64,
-    /// The critical volume of the compound, in m3/mol
+    /// Volume in m3/mol
     pub v: f64,
+    /// Temperature in K
+    pub t: f64,
 }
 
-impl CriticalState {
-    /// The compressibility factor at the critical point
+impl Pvt {
+    /// The compression factor of this Pvt instance 
     pub fn z(&self) -> f64 {
         self.p * self.v / (R * self.t)
+    }
+}
+
+/// Pressure, Temperature, compression factor state
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Ptz {
+    /// Pressure in Pa
+    pub p: f64,
+    /// Temperature in K
+    pub t: f64,
+    /// Compression factor Z
+    pub z: f64,
+}
+
+impl Ptz {
+    /// The molar volume of this Ptz instance
+    pub fn vm(&self) -> f64 {
+        self.z * R * self.t / self.p
+    }
+}
+
+impl From<Ptz> for Pvt {
+    fn from(ptz: Ptz) -> Self {
+        Pvt {
+            p: ptz.p,
+            v: ptz.vm(),
+            t: ptz.t,
+        }
+    }
+}
+
+impl From<Pvt> for Ptz {
+    fn from(pvt: Pvt) -> Self {
+        Ptz {
+            p: pvt.p,
+            t: pvt.t,
+            z: pvt.z(),
+        }
     }
 }
 
@@ -190,7 +229,7 @@ pub trait ExtensiveStateEos: StateEos {
 
 impl State for Molecule {
     fn eos_params<E: EquationOfState>(&self, t: f64) -> E::Params {
-        E::params(&self.critical_state(), self.w, t)
+        E::params(&self.critical_state, self.w, t)
     }
 
     fn molar_mass(&self) -> f64 {
@@ -208,7 +247,7 @@ impl State for Mixture {
 
         let params = self.comps
             .iter()
-            .map(|(f, m)| (*f, E::params(&m.critical_state(), m.w, t)));
+            .map(|(f, m)| (*f, E::params(&m.critical_state, m.w, t)));
 
         E::Params::mix(params)
     }

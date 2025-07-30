@@ -1,24 +1,23 @@
-use crate::{compounds, CriticalState};
+use crate::{Pvt, compounds};
 use std::{borrow::Borrow, cmp::Reverse, str::FromStr};
 
 /// A gas molecule, represented by its physical properties.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Molecule {
-    /// The critical pressure in Pa
-    pub pc: f64,
-    /// The critical temperature in K
-    pub tc: f64,
-    /// The critical volume in m^3/mol
-    pub vc: f64,
-    /// The acentric factor
-    pub w: f64,
     /// The molar mass in kg/mol
     pub m: f64,
+    /// The critical state of this molecule
+    pub critical_state: Pvt,
+    /// The acentric factor
+    pub w: f64,
 }
 
-impl Molecule {
-    pub fn critical_state(&self) -> CriticalState {
-        CriticalState { p: self.pc, t: self.tc, v: self.vc }
+impl PartialOrd for Molecule {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.m
+            .partial_cmp(&other.m)
+            .or_else(|| self.critical_state.partial_cmp(&other.critical_state))
+            .or_else(|| self.w.partial_cmp(&other.w))
     }
 }
 
@@ -113,8 +112,8 @@ impl Mixture {
         // sort with decreasing order of ratio, followed by decreasing order of molar mass
         // followed by decreasing order of critical parameters
         comps.sort_by(|(fa, ma), (fb, mb)| {
-            Reverse((*fa, ma.pc, ma.tc, ma.w))
-                .partial_cmp(&Reverse((*fb, mb.pc, mb.tc, mb.w)))
+            Reverse((*fa, ma))
+                .partial_cmp(&Reverse((*fb, mb)))
                 .unwrap()
         });
 
@@ -233,12 +232,14 @@ impl FromStr for Gas {
 #[cfg(test)]
 mod tests {
     use super::{Comp, Gas, Mixture};
-    use crate::{eos::PengRobinson, gas::MixtureError, compounds, Molecule, State};
+    use crate::{Molecule, State, compounds, eos::PengRobinson, gas::MixtureError};
     use float_eq::assert_float_eq;
 
     fn assert_molecule_eq(lhs: &Molecule, rhs: &Molecule, rtol: f64) {
-        assert_float_eq!(lhs.pc, rhs.pc, r1st <= rtol);
-        assert_float_eq!(lhs.tc, rhs.tc, r1st <= rtol);
+        assert_float_eq!(lhs.m, rhs.m, r1st <= rtol);
+        assert_float_eq!(lhs.critical_state.p, rhs.critical_state.p, r1st <= rtol);
+        assert_float_eq!(lhs.critical_state.v, rhs.critical_state.v, r1st <= rtol);
+        assert_float_eq!(lhs.critical_state.t, rhs.critical_state.t, r1st <= rtol);
         assert_float_eq!(lhs.w, rhs.w, r1st <= rtol);
     }
 

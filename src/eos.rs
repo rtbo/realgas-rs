@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use crate::{CriticalState, R};
+use crate::{Pvt, R};
 
 /// The default and recommended equation of state of this library.
 pub type DefaultEos = PengRobinson;
@@ -99,7 +99,7 @@ pub trait EquationOfState {
     ///  * `cs` - The critical state of the molecule
     ///  * `w`  - The acentric factor of the molecule (no dimension)
     ///  * `t`  - The temperature of the gas, in K
-    fn params(cs: &CriticalState, w: f64, t: f64) -> Self::Params;
+    fn params(cs: &Pvt, w: f64, t: f64) -> Self::Params;
 
     /// Compute the gas pressure for given parameters and state.
     ///
@@ -123,7 +123,7 @@ pub enum IdealGas {}
 
 impl EquationOfState for IdealGas {
     type Params = ();
-    fn params(_cs: &CriticalState, _w: f64, _t: f64) -> Self::Params {
+    fn params(_cs: &Pvt, _w: f64, _t: f64) -> Self::Params {
         // No parameters needed for the ideal gas law
         ()
     }
@@ -144,7 +144,7 @@ pub enum VanDerWaals {}
 impl EquationOfState for VanDerWaals {
     type Params = AbParams;
 
-    fn params(cs: &CriticalState, _w: f64, _t: f64) -> Self::Params {
+    fn params(cs: &Pvt, _w: f64, _t: f64) -> Self::Params {
         let a = 27.0 * R * R * cs.t * cs.t / (64.0 * cs.p);
         let b = R * cs.t / (8.0 * cs.p);
         AbParams { a, b }
@@ -174,7 +174,7 @@ pub enum RedlichKwong {}
 impl EquationOfState for RedlichKwong {
     type Params = AbParams;
 
-    fn params(cs: &CriticalState, _w: f64, _t: f64) -> Self::Params {
+    fn params(cs: &Pvt, _w: f64, _t: f64) -> Self::Params {
         let a = 0.42748023 * R * R * cs.t.powf(2.5) / cs.p;
         let b = 0.08664035 * R * cs.t / cs.p;
 
@@ -205,7 +205,7 @@ pub enum SoaveRedlichKwong {}
 impl EquationOfState for SoaveRedlichKwong {
     type Params = AbParams;
 
-    fn params(cs: &CriticalState, w: f64, t: f64) -> Self::Params {
+    fn params(cs: &Pvt, w: f64, t: f64) -> Self::Params {
         let m = 0.48 + 1.574 * w - 0.176 * w * w;
         let sq_a = 1f64 + m * (1f64 - (t / cs.t).sqrt());
         let alpha = sq_a * sq_a;
@@ -240,7 +240,7 @@ pub enum PengRobinson {}
 impl EquationOfState for PengRobinson {
     type Params = AbParams;
 
-    fn params(cs: &CriticalState, w: f64, t: f64) -> Self::Params {
+    fn params(cs: &Pvt, w: f64, t: f64) -> Self::Params {
         let m = if w <= 0.491 {
             0.37464 + 1.56226 * w - 0.26992 * w * w
         } else {
@@ -278,7 +278,7 @@ pub enum PatelTejaValderrama {}
 impl EquationOfState for PatelTejaValderrama {
     type Params = AbcParams;
 
-    fn params(cs: &CriticalState, w: f64, t: f64) -> Self::Params {
+    fn params(cs: &Pvt, w: f64, t: f64) -> Self::Params {
         let zc = cs.z();
 
         let m = 0.46283 + 3.58230 * w * zc + 8.19417 * w * w * zc * zc;
