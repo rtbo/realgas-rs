@@ -1,45 +1,58 @@
 /// Physical constants of gas molecules
 /// source: http://www.kaylaiacovino.com/Petrology_Tools/Critical_Constants_and_Acentric_Factors.htm
-use crate::Molecule;
+use crate::{Gas, Mixture, Molecule};
 
-pub fn lookup_molecule<S>(name: S) -> Option<Molecule> 
+pub fn lookup<S>(name: S) -> Option<Gas> 
 where S: AsRef<str>
 {
     match name.as_ref() {
-        "Ar" => Some(AR),
-        "Br2" => Some(BR2),
-        "Cl2" => Some(CL2),
-        "F2" => Some(F2),
-        "He" => Some(HE),
-        "H2" => Some(H2),
-        "I2" => Some(I2),
-        "Kr" => Some(KR),
-        "Ne" => Some(NE),
-        "N2" => Some(N2),
-        "O2" => Some(O2),
-        "Xe" => Some(XE),
-        "C2H2" => Some(C2H2),
-        "C6H6" => Some(C6H6),
-        "C4H10" => Some(C4H10),
-        "C4H8" => Some(C4H8),
-        "C6H12" => Some(C6H12),
-        "C3H6" => Some(C3H6),
-        "C2H6" => Some(C2H6),
-        "C2H4" => Some(C2H4),
-        "NH3" => Some(NH3),
-        "CO2" => Some(CO2),
-        "CO" => Some(CO),
-        "NO" => Some(NO),
-        "SO2" => Some(SO2),
-        "SO3" => Some(SO3),
-        "H2O" => Some(H2O),
-        "CH3COOH" => Some(CH3COOH),
-        "C3H6O" => Some(C3H6O),
-        "C2H5OH" => Some(C2H5OH),
-        "CH3OH" => Some(CH3OH),
-        "CH3CL" => Some(CH3CL),
+        "dry_air" => Some(dry_air().into()),
+        "Ar" => Some(AR.into()),
+        "Br2" => Some(BR2.into()),
+        "Cl2" => Some(CL2.into()),
+        "F2" => Some(F2.into()),
+        "He" => Some(HE.into()),
+        "H2" => Some(H2.into()),
+        "I2" => Some(I2.into()),
+        "Kr" => Some(KR.into()),
+        "Ne" => Some(NE.into()),
+        "N2" => Some(N2.into()),
+        "O2" => Some(O2.into()),
+        "Xe" => Some(XE.into()),
+        "C2H2" => Some(C2H2.into()),
+        "C6H6" => Some(C6H6.into()),
+        "C4H10" => Some(C4H10.into()),
+        "C4H8" => Some(C4H8.into()),
+        "C6H12" => Some(C6H12.into()),
+        "C3H6" => Some(C3H6.into()),
+        "C2H6" => Some(C2H6.into()),
+        "C2H4" => Some(C2H4.into()),
+        "NH3" => Some(NH3.into()),
+        "CO2" => Some(CO2.into()),
+        "CO" => Some(CO.into()),
+        "NO" => Some(NO.into()),
+        "SO2" => Some(SO2.into()),
+        "SO3" => Some(SO3.into()),
+        "H2O" => Some(H2O.into()),
+        "CH3COOH" => Some(CH3COOH.into()),
+        "C3H6O" => Some(C3H6O.into()),
+        "C2H5OH" => Some(C2H5OH.into()),
+        "CH3OH" => Some(CH3OH.into()),
+        "CH3CL" => Some(CH3CL.into()),
         _ => None,
     }
+}
+
+/// Air mixture
+pub fn dry_air() -> Mixture {
+    use crate::gas::Comp;
+    Mixture::new(&[
+        Comp::Factor(0.7808, N2.into()),
+        Comp::Factor(0.2095, O2.into()),
+        Comp::Factor(0.0093, AR.into()),
+        Comp::Factor(0.0004, CO2.into()),
+    ])
+    .unwrap()
 }
 
 /// Argon

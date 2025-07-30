@@ -1,6 +1,6 @@
 pub mod eos;
 mod gas;
-pub mod molecules;
+pub mod compounds;
 
 use eos::{Eos, EquationOfState};
 pub use gas::{Gas, Mixture, Molecule};
@@ -247,13 +247,13 @@ impl ExtensiveStateEos for Gas {}
 #[cfg(test)]
 mod tests {
     use super::{State};
-    use crate::{eos, molecules};
+    use crate::{eos, compounds};
     use float_eq::assert_float_eq;
 
     #[test]
     fn h2_mobility() {
         // H2 in mobility storage is reputed at 39.75 kg/m3
-        let h2 = molecules::H2;
+        let h2 = compounds::H2;
         let h2_storage_mass = 39.75; // kg/m3
         type E = eos::PengRobinson;
 

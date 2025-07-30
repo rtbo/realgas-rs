@@ -1,4 +1,4 @@
-use crate::{molecules, CriticalState};
+use crate::{compounds, CriticalState};
 use std::{borrow::Borrow, cmp::Reverse, str::FromStr};
 
 /// A gas molecule, represented by its physical properties.
@@ -203,9 +203,8 @@ impl FromStr for Gas {
         if scomps.is_empty() {
             Err(GasParseError::MixtureNotWhole)
         } else if scomps.len() == 1 {
-            molecules::lookup_molecule(&scomps[0])
+            compounds::lookup(&scomps[0])
                 .ok_or_else(|| GasParseError::UnknownMolecule(scomps[0].to_string()))
-                .map(|m| Gas::Molecule(m))
         } else {
             let mut mcomps = Vec::<Comp>::new();
             for sc in scomps {
@@ -214,15 +213,15 @@ impl FromStr for Gas {
                     return Err(GasParseError::ParseError);
                 }
                 let symbol = *sfrac.iter().last().unwrap();
-                let g = molecules::lookup_molecule(symbol)
+                let g = compounds::lookup(symbol)
                     .ok_or_else(|| GasParseError::UnknownMolecule(symbol.to_string()))?;
                 if sfrac.len() == 1 {
-                    mcomps.push(Comp::Remainder(Gas::Molecule(g)));
+                    mcomps.push(Comp::Remainder(g));
                 } else {
                     let frac = sfrac[0]
                         .parse::<f64>()
                         .map_err(|_| GasParseError::ParseError)?;
-                    mcomps.push(Comp::Factor(frac / 100.0, Gas::Molecule(g)));
+                    mcomps.push(Comp::Factor(frac / 100.0, g));
                 }
             }
 
@@ -234,7 +233,7 @@ impl FromStr for Gas {
 #[cfg(test)]
 mod tests {
     use super::{Comp, Gas, Mixture};
-    use crate::{eos::PengRobinson, gas::MixtureError, molecules, Molecule, State};
+    use crate::{eos::PengRobinson, gas::MixtureError, compounds, Molecule, State};
     use float_eq::assert_float_eq;
 
     fn assert_molecule_eq(lhs: &Molecule, rhs: &Molecule, rtol: f64) {
@@ -275,7 +274,7 @@ mod tests {
     #[test]
     fn parse_molecule_works() {
         let gas: Gas = "N2".parse().expect("should parse N2");
-        assert_eq!(gas, Gas::from(molecules::N2));
+        assert_eq!(gas, Gas::from(compounds::N2));
     }
 
     #[test]
@@ -285,10 +284,10 @@ mod tests {
             .expect("should parse dry air composition");
         let built_air = Gas::Mixture(
             Mixture::new(vec![
-                Comp::Factor(0.7808, molecules::N2.into()),
-                Comp::Factor(0.2095, molecules::O2.into()),
-                Comp::Factor(0.0093, molecules::AR.into()),
-                Comp::Remainder(molecules::CO2.into()),
+                Comp::Factor(0.7808, compounds::N2.into()),
+                Comp::Factor(0.2095, compounds::O2.into()),
+                Comp::Factor(0.0093, compounds::AR.into()),
+                Comp::Remainder(compounds::CO2.into()),
             ])
             .unwrap(),
         );
@@ -311,15 +310,15 @@ mod tests {
         assert(Mixture::new(&[]));
 
         assert(Mixture::new(&[
-            Comp::Factor(0.5, molecules::N2.into()),
-            Comp::Factor(0.3, molecules::O2.into()),
-            Comp::Factor(0.1, molecules::AR.into()),
+            Comp::Factor(0.5, compounds::N2.into()),
+            Comp::Factor(0.3, compounds::O2.into()),
+            Comp::Factor(0.1, compounds::AR.into()),
         ]));
 
         assert(Mixture::new(&[
-            Comp::Factor(0.5, molecules::N2.into()),
-            Comp::Factor(0.5, molecules::O2.into()),
-            Comp::Factor(0.1, molecules::AR.into()),
+            Comp::Factor(0.5, compounds::N2.into()),
+            Comp::Factor(0.5, compounds::O2.into()),
+            Comp::Factor(0.1, compounds::AR.into()),
         ]));
     }
 
@@ -330,43 +329,43 @@ mod tests {
         let air_ar = 0.0093;
         let air_co2 = 0.0004;
         let air = Mixture::new(&[
-            Comp::Factor(air_o2, molecules::O2.into()),
-            Comp::Factor(air_n2, molecules::N2.into()),
-            Comp::Factor(air_ar, molecules::AR.into()),
-            Comp::Factor(air_co2, molecules::CO2.into()),
+            Comp::Factor(air_o2, compounds::O2.into()),
+            Comp::Factor(air_n2, compounds::N2.into()),
+            Comp::Factor(air_ar, compounds::AR.into()),
+            Comp::Factor(air_co2, compounds::CO2.into()),
         ])
         .unwrap();
         let mix1 = Mixture::new(&[
-            Comp::Factor(0.1, molecules::O2.into()),
+            Comp::Factor(0.1, compounds::O2.into()),
             Comp::Remainder(air.clone().into()),
         ])
         .unwrap();
         let mix2 = Mixture::new(&[
             Comp::Factor(0.9, air.into()),
-            Comp::Remainder(molecules::O2.into()),
+            Comp::Remainder(compounds::O2.into()),
         ])
         .unwrap();
         let mix3 = Mixture::new(&[
-            Comp::Factor(air_n2 * 0.9, molecules::N2.into()),
-            Comp::Factor(air_o2 * 0.9 + 0.1, molecules::O2.into()),
-            Comp::Factor(air_ar * 0.9, molecules::AR.into()),
-            Comp::Factor(air_co2 * 0.9, molecules::CO2.into()),
+            Comp::Factor(air_n2 * 0.9, compounds::N2.into()),
+            Comp::Factor(air_o2 * 0.9 + 0.1, compounds::O2.into()),
+            Comp::Factor(air_ar * 0.9, compounds::AR.into()),
+            Comp::Factor(air_co2 * 0.9, compounds::CO2.into()),
         ])
         .unwrap();
         let mix4 = Mixture::new(&[
-            Comp::Factor(air_n2 * 0.9, molecules::N2.into()),
-            Comp::Factor(air_o2 * 0.9, molecules::O2.into()),
-            Comp::Factor(air_ar * 0.9, molecules::AR.into()),
-            Comp::Factor(air_co2 * 0.9, molecules::CO2.into()),
-            Comp::Factor(0.1, molecules::O2.into()),
+            Comp::Factor(air_n2 * 0.9, compounds::N2.into()),
+            Comp::Factor(air_o2 * 0.9, compounds::O2.into()),
+            Comp::Factor(air_ar * 0.9, compounds::AR.into()),
+            Comp::Factor(air_co2 * 0.9, compounds::CO2.into()),
+            Comp::Factor(0.1, compounds::O2.into()),
         ])
         .unwrap();
 
         assert_eq!(mix1.comps.len(), 4);
-        assert_eq!(mix1.comps[0].1, molecules::N2);
-        assert_eq!(mix1.comps[1].1, molecules::O2);
-        assert_eq!(mix1.comps[2].1, molecules::AR);
-        assert_eq!(mix1.comps[3].1, molecules::CO2);
+        assert_eq!(mix1.comps[0].1, compounds::N2);
+        assert_eq!(mix1.comps[1].1, compounds::O2);
+        assert_eq!(mix1.comps[2].1, compounds::AR);
+        assert_eq!(mix1.comps[3].1, compounds::CO2);
         assert_mixture_eq(&mix1, &mix2, 0.00001);
         assert_mixture_eq(&mix2, &mix3, 0.00001);
         assert_mixture_eq(&mix3, &mix4, 0.00001);
