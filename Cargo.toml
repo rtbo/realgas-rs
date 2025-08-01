@@ -19,7 +19,6 @@ path = "bench/main.rs"
 required-features = ["bench"]
 
 [features]
-default = ["app"]
 app = ["clap", "anyhow"]
 bench = ["csv", "plotters"]
 
