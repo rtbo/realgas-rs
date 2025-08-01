@@ -1,5 +1,5 @@
 use crate::{Pvt, compounds};
-use std::{borrow::Borrow, cmp::Reverse, str::FromStr};
+use std::{borrow::Borrow, cmp::Reverse, fmt, num::ParseFloatError, str::FromStr};
 
 /// A gas molecule, represented by its physical properties.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -28,11 +28,23 @@ pub struct Mixture {
 }
 
 /// A mixture error
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MixtureError {
     MixtureNotWhole,
-    InvalidFactor,
+    InvalidFraction(f64),
 }
+
+impl fmt::Display for MixtureError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MixtureError::MixtureNotWhole => write!(f, "The sum of fractions does not equal to 100%"),
+            MixtureError::InvalidFraction(fraction) => write!(f, "{:.1}% isn't a valid molar fraction", fraction),
+        }
+        
+    }
+}
+
+impl std::error::Error for MixtureError {}
 
 /// A component to build a mixture
 #[derive(Debug, Clone)]
@@ -62,7 +74,7 @@ impl Mixture {
                 num_voids += 1;
             } else {
                 if f <= 0f64 || f >= 1f64 {
-                    return Err(MixtureError::InvalidFactor);
+                    return Err(MixtureError::InvalidFraction(f));
                 }
                 fill += f;
             }
@@ -177,22 +189,37 @@ impl From<&Mixture> for Gas {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum GasParseError {
     UnknownMolecule(String),
-    MixtureNotWhole,
-    InvalidFactor,
-    ParseError,
+    Mixture(MixtureError),
+    Float(ParseFloatError),
+    Other(String),
 }
 
 impl From<MixtureError> for GasParseError {
     fn from(value: MixtureError) -> Self {
-        match value {
-            MixtureError::InvalidFactor => GasParseError::InvalidFactor,
-            MixtureError::MixtureNotWhole => GasParseError::MixtureNotWhole,
+        GasParseError::Mixture(value)
+    }
+}
+impl From<ParseFloatError> for GasParseError {
+    fn from(value: ParseFloatError) -> Self {
+        GasParseError::Float(value)
+    }
+}
+
+impl fmt::Display for GasParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GasParseError::UnknownMolecule(m) => write!(f, "Can't lookup {m} as a known molecule"),
+            GasParseError::Mixture(m) => m.fmt(f),
+            GasParseError::Float(err) => err.fmt(f),
+            GasParseError::Other(msg) => write!(f, "{msg}"),
         }
     }
 }
+
+impl std::error::Error for GasParseError {}
 
 impl FromStr for Gas {
     type Err = GasParseError;
@@ -200,7 +227,7 @@ impl FromStr for Gas {
         let scomps: Vec<&str> = s.split("+").collect();
 
         if scomps.is_empty() {
-            Err(GasParseError::MixtureNotWhole)
+            Err(GasParseError::Mixture(MixtureError::MixtureNotWhole))
         } else if scomps.len() == 1 {
             compounds::lookup(&scomps[0])
                 .ok_or_else(|| GasParseError::UnknownMolecule(scomps[0].to_string()))
@@ -209,7 +236,7 @@ impl FromStr for Gas {
             for sc in scomps {
                 let sfrac: Vec<&str> = sc.split("%").collect();
                 if sfrac.len() > 2 {
-                    return Err(GasParseError::ParseError);
+                    return Err(GasParseError::Other(format!("Can't parse {sc} as a compound fraction")));
                 }
                 let symbol = *sfrac.iter().last().unwrap();
                 let g = compounds::lookup(symbol)
@@ -218,8 +245,7 @@ impl FromStr for Gas {
                     mcomps.push(Comp::Remainder(g));
                 } else {
                     let frac = sfrac[0]
-                        .parse::<f64>()
-                        .map_err(|_| GasParseError::ParseError)?;
+                        .parse::<f64>()?;
                     mcomps.push(Comp::Factor(frac / 100.0, g));
                 }
             }

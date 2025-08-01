@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, fmt, str::FromStr};
 
 use crate::{Pvt, R};
 
@@ -335,5 +335,31 @@ pub enum Eos {
 impl Default for Eos {
     fn default() -> Self {
         Eos::PengRobinson
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseEosError(String);
+
+impl fmt::Display for ParseEosError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Could not parse \"{}\" as an equation of state", self.0)
+    }
+}
+
+impl std::error::Error for ParseEosError {}
+
+impl FromStr for Eos {
+    type Err = ParseEosError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "ideal" => Ok(Eos::IdealGas),
+            "vdw" => Ok(Eos::VanDerWaals),
+            "rk" => Ok(Eos::RedlichKwong),
+            "srk" => Ok(Eos::SoaveRedlichKwong),
+            "pr" => Ok(Eos::PengRobinson),
+            "ptv" => Ok(Eos::PatelTejaValderrama),
+            _ => Err(ParseEosError(s.to_string()))
+        }
     }
 }
