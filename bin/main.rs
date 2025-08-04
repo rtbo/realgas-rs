@@ -61,6 +61,7 @@ fn run(cli: &Cli) -> anyhow::Result<()> {
             match (pressure, temperature) {
                 (Var::Scalar(p), Var::Scalar(t)) => {
                     let p = p * 1e5;
+                    let t = t + 273.15;
                     let z = gas.z_eos(eos, p, t);
                     println!("{z}");
                 }
